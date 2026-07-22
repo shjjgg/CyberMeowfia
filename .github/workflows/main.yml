@@ -5,12 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: debug ls
+        run: ls -la
       - uses: nttld/setup-ndk@v1
         with:
             ndk-version: r25c
       - name: compile
         run: |
           CC=$(find $ANDROID_NDK* -name 'aarch64-linux-android29-clang' | head -1)
+          echo "CC=$CC"
           $CC -O2 -static -fno-pie -no-pie -o futex_poc poc.c -pthread
       - uses: actions/upload-artifact@v4
         with:
