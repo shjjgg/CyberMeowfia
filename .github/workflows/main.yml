@@ -1,52 +1,21 @@
 name: build
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
+on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Cache Android NDK
-        uses: actions/cache@v3
+      - uses: actions/checkout@v4
+      - name: debug ls
+        run: ls -la
+      - uses: nttld/setup-ndk@v1
         with:
-          path: ${{ env.ANDROID_NDK_HOME }}
-          key: ndk-r25c
-
-      - name: Setup Android NDK r25c
-        uses: nttld/setup-ndk@v1
+            ndk-version: r27
+      - name: compile
+        run: |
+          CC=$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" -name 'aarch64-linux-android28-clang' | head -1)
+          echo "CC=$CC"
+          $CC -O0 -static -fPIE -pie -o futex_poc_pd1728 IonStack/CVE-2026-43499/poc/poc.c -pthread
+      - uses: actions/upload-artifact@v4
         with:
-          ndk-version: r25c
-
-      - name: Print env & debug list
-        run: |
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
-          ls -la
-          ls src/targets/
-
-      # 方案1：使用项目自带Makefile编译（适配pd1728机型，推荐）
-      - name: Compile exploit with Makefile (PD1728 / API28)
-        run: |
-          export ANDROID_NDK_ROOT=$ANDROID_NDK_HOME
-          make clean
-          make PROJECT=pd1728 API=28
-
-      # 可选：单独编译futex_poc（保留原有功能，修正PIE与API版本）
-      - name: Compile standalone futex_poc API28 PIE
-        run: |
-          CC=$(find $ANDROID_NDK_HOME -name 'aarch64-linux-android28-clang' | head -1)
-          echo "Target compiler: $CC"
-          $CC -O0 -g0 -static -fPIE -pie -o futex_poc IonStack/CVE-2026-43499/poc/poc.c -pthread
-
-      # 上传全部编译产物
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: pd1728-exploit-build
-          path: |
-            build/
-            futex_poc
+          name: futex_poc_pd1728
+          path: futex_poc_pd1728
