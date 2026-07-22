@@ -9,13 +9,15 @@ jobs:
         run: ls -la
       - uses: nttld/setup-ndk@v1
         with:
-            ndk-version: r27
-      - name: compile
+            ndk-version: r25c
+      - name: compile for PD1728 Android9(API28) fix TLS align
         run: |
-          CC=$(find "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" -name 'aarch64-linux-android28-clang' | head -1)
+          CC=$(find $ANDROID_NDK* -name 'aarch64-linux-android28-clang' | head -1)
           echo "CC=$CC"
-          $CC -O0 -static -fPIE -pie -o futex_poc_pd1728 IonStack/CVE-2026-43499/poc/poc.c -pthread
+          $CC -O0 -fPIE -pie -pthread \
+            -Wl,-z,max-page-size=65536 -Wl,-z,page-size=65536 \
+            -o futex_pd1728 IonStack/CVE-2026-43499/poc/poc.c
       - uses: actions/upload-artifact@v4
         with:
-          name: futex_poc_pd1728
-          path: futex_poc_pd1728
+          name: futex_pd1728
+          path: futex_pd1728
