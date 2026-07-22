@@ -1,0 +1,18 @@
+name: build
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nttld/setup-ndk@v1
+        with:
+            ndk-version: r25c
+      - name: compile
+        run: |
+          CC=$(find $ANDROID_NDK* -name 'aarch64-linux-android29-clang' | head -1)
+          $CC -O2 -static -fno-pie -no-pie -o futex_poc poc.c -pthread
+      - uses: actions/upload-artifact@v4
+        with:
+          name: futex_poc
+          path: futex_poc
